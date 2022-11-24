@@ -40,10 +40,10 @@ func main() {
 		fmt.Printf("Solving day %d # ", day)
 		solutionForDay := solution.GetSolutionFor(day)
 		solutionName := findSimpleTypeName(solutionForDay)
-		solututionInputFilename := fmt.Sprintf("input/%s.txt", solutionName)
-		input, err := os.ReadFile(solututionInputFilename)
+		solutionInputFilename := fmt.Sprintf("input/%s.txt", solutionName)
+		input, err := os.ReadFile(solutionInputFilename)
 		if err != nil {
-			fmt.Printf("Error reading input from file %s: %v\n", solututionInputFilename, err)
+			fmt.Printf("Error reading input from file %s: %v\n", solutionInputFilename, err)
 			os.Exit(-4)
 		}
 		inputAsRows := strings.Split(strings.ReplaceAll(string(input), "\r\n", "\n"), "\n")
