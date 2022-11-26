@@ -49,9 +49,9 @@ func main() {
 		inputAsRows := strings.Split(strings.ReplaceAll(string(input), "\r\n", "\n"), "\n")
 		fmt.Printf("Part1:... ")
 		result1 := solutionForDay.SolvePart1(inputAsRows)
-		fmt.Printf("Solution Part1: %v Part2:... ", result1)
+		fmt.Printf("%v Part2:... ", result1)
 		result2 := solutionForDay.SolvePart2(inputAsRows)
-		fmt.Printf("Solution Part2: %v", result2)
+		fmt.Printf("%v", result2)
 		fmt.Printf("\n")
 	}
 }
