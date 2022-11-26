@@ -35,7 +35,7 @@ func main() {
 	}
 
 	fmt.Println("Welcome to Advent of Code 22")
-	fmt.Println("################")
+	fmt.Println("###############################")
 	for _, day := range allDays {
 		fmt.Printf("Solving day %d # ", day)
 		solutionForDay := solution.GetSolutionFor(day)
