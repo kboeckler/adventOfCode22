@@ -1,7 +1,9 @@
 package solution
 
 import (
+	"sort"
 	"strconv"
+	"strings"
 )
 
 func init() {
@@ -12,31 +14,43 @@ type day1 struct {
 }
 
 func (d day1) SolvePart1(input []string) interface{} {
-	amountOfIncrements := 0
-	for i := 1; i < len(input); i++ {
-		previous, _ := strconv.Atoi(input[i-1])
-		current, _ := strconv.Atoi(input[i])
-		if previous < current {
-			amountOfIncrements++
+	maxCalories := -1
+	currentCalories := 0
+	for _, row := range input {
+		if strings.EqualFold(row, "") {
+			if currentCalories > maxCalories {
+				maxCalories = currentCalories
+			}
+			currentCalories = 0
+			continue
 		}
+		itemCalories, err := strconv.Atoi(row)
+		if err != nil {
+			panic(err)
+		}
+		currentCalories += itemCalories
 	}
-	return amountOfIncrements
+	return maxCalories
 }
 
 func (d day1) SolvePart2(input []string) interface{} {
-	amountOfIncrements := 0
-	for i := 3; i < len(input); i++ {
-		firstOfPreviousWindow, _ := strconv.Atoi(input[i-3])
-		secondOfPreviousWindow, _ := strconv.Atoi(input[i-2])
-		thirdOfPreviousWindow, _ := strconv.Atoi(input[i-1])
-		firstOfCurrentWindow := secondOfPreviousWindow
-		secondOfCurrentWindow := thirdOfPreviousWindow
-		thirdOfCurrentWindow, _ := strconv.Atoi(input[i-0])
-		current := firstOfCurrentWindow + secondOfCurrentWindow + thirdOfCurrentWindow
-		previous := firstOfPreviousWindow + secondOfPreviousWindow + thirdOfPreviousWindow
-		if previous < current {
-			amountOfIncrements++
+	caloriesByElf := make([]int, 0)
+	currentCalories := 0
+	for _, row := range input {
+		if strings.EqualFold(row, "") {
+			if currentCalories > 0 {
+				caloriesByElf = append(caloriesByElf, currentCalories)
+			}
+			currentCalories = 0
+			continue
 		}
+		itemCalories, err := strconv.Atoi(row)
+		if err != nil {
+			panic(err)
+		}
+		currentCalories += itemCalories
 	}
-	return amountOfIncrements
+	sort.Ints(caloriesByElf)
+	amountElfs := len(caloriesByElf)
+	return caloriesByElf[amountElfs-1] + caloriesByElf[amountElfs-2] + caloriesByElf[amountElfs-3]
 }
