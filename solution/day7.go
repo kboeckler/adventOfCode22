@@ -15,6 +15,46 @@ type day7 struct {
 }
 
 func (d day7) SolvePart1(input []string) interface{} {
+	directories := fullDirectoryScan(input)
+
+	result := big.NewInt(0)
+	for _, directory := range directories.elements {
+		if directory.totalSize.Cmp(big.NewInt(100000)) <= 0 {
+			result = result.Add(result, directory.totalSize)
+		}
+	}
+
+	return result
+}
+
+func (d day7) SolvePart2(input []string) interface{} {
+	directories := fullDirectoryScan(input)
+
+	var rootDir directory
+	for _, dir := range directories.elements {
+		if strings.EqualFold(dir.path, "/") {
+			rootDir = dir
+			break
+		}
+	}
+
+	neededSpace := big.NewInt(70000000)
+	neededSpace.Sub(neededSpace, rootDir.totalSize)
+	neededSpace.Sub(big.NewInt(30000000), neededSpace)
+
+	var smallestSize *big.Int = nil
+	for _, dir := range directories.elements {
+		if dir.totalSize.Cmp(neededSpace) >= 0 {
+			if smallestSize == nil || smallestSize.Cmp(dir.totalSize) > 0 {
+				smallestSize = dir.totalSize
+			}
+		}
+	}
+
+	return smallestSize
+}
+
+func fullDirectoryScan(input []string) directories {
 	filesByPath := make(map[string][]file, 0)
 	currentDir := make([]string, 0)
 	visitDirectory(partsToDirectoryPath(currentDir), filesByPath)
@@ -34,7 +74,7 @@ func (d day7) SolvePart1(input []string) interface{} {
 					visitDirectory(partsToDirectoryPath(currentDir), filesByPath)
 				}
 			}
-		} else if len(strings.TrimLeft(row, "dir")) == len(row) {
+		} else if !strings.HasPrefix(row, "dir") {
 			sizeFile := strings.Split(row, " ")
 			size, _ := strconv.Atoi(sizeFile[0])
 			files := filesByPath[partsToDirectoryPath(currentDir)]
@@ -57,21 +97,16 @@ func (d day7) SolvePart1(input []string) interface{} {
 		}
 		subdirSize := big.NewInt(0)
 		for _, otherDir := range directories.elements {
-			if len(strings.TrimLeft(otherDir.path, directory.path)) < len(otherDir.path) {
-				subdirSize = subdirSize.Add(subdirSize, otherDir.totalSize)
+			if strings.HasPrefix(otherDir.path, directory.path) && !strings.EqualFold(otherDir.path, directory.path) {
+				subPath := strings.Replace(otherDir.path, directory.path, "", 1)
+				if len(strings.ReplaceAll(subPath, "/", "")) == len(subPath)-1 {
+					subdirSize = subdirSize.Add(subdirSize, otherDir.totalSize)
+				}
 			}
 		}
 		directory.totalSize = directory.totalSize.Add(myFilesSize, subdirSize)
 	}
-
-	result := big.NewInt(0)
-	for _, directory := range directories.elements {
-		if directory.totalSize.Cmp(big.NewInt(100000)) <= 0 {
-			result = result.Add(result, directory.totalSize)
-		}
-	}
-
-	return result
+	return directories
 }
 
 func visitDirectory(path string, directories map[string][]file) {
@@ -116,8 +151,4 @@ type directory struct {
 type file struct {
 	name string
 	size *big.Int
-}
-
-func (d day7) SolvePart2(input []string) interface{} {
-	return ""
 }
