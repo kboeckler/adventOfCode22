@@ -1,6 +1,8 @@
 package solution
 
-import "fmt"
+import (
+	"sort"
+)
 
 func init() {
 	RegisterSolution(8, day8{})
@@ -59,7 +61,10 @@ func (d day8) SolvePart1(input []string) interface{} {
 func (d day8) SolvePart2(input []string) interface{} {
 	width := len(input[0])
 	height := len(input)
-	vision := make(map[int]int, 0)
+	visionToLeft := make(map[int]int, 0)
+	visionToRight := make(map[int]int, 0)
+	visionToTop := make(map[int]int, 0)
+	visionToBottom := make(map[int]int, 0)
 	for y := 0; y < height; y++ {
 		highestX := 0
 		highestY := y
@@ -70,8 +75,15 @@ func (d day8) SolvePart2(input []string) interface{} {
 				highest = current
 				highestX = x
 				highestY = y
+				visionToLeft[coordToIndex(x, y, width)] = visionToLeft[coordToIndex(x, y, width)] + x
 			} else {
-				vision[coordToIndex(x, y, width)] = vision[coordToIndex(x, y, width)] + x - highestX
+				sight := 1
+				for sight = 1; sight <= width-x; sight++ {
+					if input[y][x-sight] >= current {
+						break
+					}
+				}
+				visionToLeft[coordToIndex(x, y, width)] = visionToLeft[coordToIndex(x, y, width)] + sight
 			}
 		}
 		highestX = width - 1
@@ -83,8 +95,15 @@ func (d day8) SolvePart2(input []string) interface{} {
 				highest = current
 				highestX = x
 				highestY = y
+				visionToRight[coordToIndex(x, y, width)] = visionToRight[coordToIndex(x, y, width)] + width - 1 - x
 			} else {
-				vision[coordToIndex(x, y, width)] = vision[coordToIndex(x, y, width)] + highestX - x
+				sight := 1
+				for sight = 1; sight <= x; sight++ {
+					if input[y][x+sight] >= current {
+						break
+					}
+				}
+				visionToRight[coordToIndex(x, y, width)] = visionToRight[coordToIndex(x, y, width)] + sight
 			}
 		}
 	}
@@ -98,8 +117,15 @@ func (d day8) SolvePart2(input []string) interface{} {
 				highest = current
 				highestX = x
 				highestY = y
+				visionToTop[coordToIndex(x, y, width)] = visionToTop[coordToIndex(x, y, width)] + y
 			} else {
-				vision[coordToIndex(x, y, width)] = vision[coordToIndex(x, y, width)] + y - highestY
+				sight := 1
+				for sight = 1; sight <= height-y; sight++ {
+					if input[y-sight][x] >= current {
+						break
+					}
+				}
+				visionToTop[coordToIndex(x, y, width)] = visionToTop[coordToIndex(x, y, width)] + sight
 			}
 		}
 		highestX = x
@@ -111,22 +137,30 @@ func (d day8) SolvePart2(input []string) interface{} {
 				highest = current
 				highestX = x
 				highestY = y
+				visionToBottom[coordToIndex(x, y, width)] = visionToBottom[coordToIndex(x, y, width)] + height - 1 - y
 			} else {
-				vision[coordToIndex(x, y, width)] = vision[coordToIndex(x, y, width)] + highestY - y
+				sight := 1
+				for sight = 1; sight <= y; sight++ {
+					if input[y+sight][x] >= current {
+						break
+					}
+				}
+				visionToBottom[coordToIndex(x, y, width)] = visionToBottom[coordToIndex(x, y, width)] + sight
 			}
 		}
 	}
-	for index, val := range vision {
-		x, y := indexToCoord(index, width)
-		fmt.Printf("%d %d has vision of %d\n", x, y, val)
+	scenicScores := make([]int, 0, width*height)
+	for x := 0; x < width; x++ {
+		for y := 0; y < height; y++ {
+			index := coordToIndex(x, y, width)
+			score := visionToLeft[index] * visionToRight[index] * visionToTop[index] * visionToBottom[index]
+			scenicScores = append(scenicScores, score)
+		}
 	}
-	return ""
+	sort.Ints(scenicScores)
+	return scenicScores[len(scenicScores)-1]
 }
 
 func coordToIndex(x, y, width int) int {
 	return y*width + x
-}
-
-func indexToCoord(index, width int) (int, int) {
-	return index % width, index / width
 }
