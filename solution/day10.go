@@ -25,17 +25,16 @@ func (d day10) SolvePart1(input []string) interface{} {
 func (d day10) SolvePart2(input []string) interface{} {
 	xValues := d.calculateXValuesPerCycle(input)
 	crt := strings.Builder{}
-	crt.WriteString("\n")
 	for i := 0; i < 240; i++ {
 		column := i % 40
+		if column == 0 {
+			crt.WriteString("\n")
+		}
 		distanceSprite := int(math.Abs(float64(column - xValues[i])))
 		if distanceSprite <= 1 {
 			crt.WriteString("#")
 		} else {
 			crt.WriteString(".")
-		}
-		if column == 39 {
-			crt.WriteString("\n")
 		}
 	}
 	return crt.String()
