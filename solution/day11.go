@@ -53,22 +53,12 @@ func (d day11) SolvePart1(input []string) interface{} {
 	}
 	monkeys[m.id] = m
 	inspectionsByMonkey := make(map[int]int)
-	var timeOverall time.Duration = 0
-	var timeForWorry time.Duration = 0
-	var timeForThrowing time.Duration = 0
-	var timeForRelief time.Duration = 0
 	for i := 0; i < 20; i++ {
-		beginOverall := time.Now()
 		for j := 0; j < len(monkeys); j++ {
 			m := monkeys[j]
 			for _, item := range m.items {
-				begin := time.Now()
 				itemNext := m.worryOp.apply(item)
-				timeForWorry += time.Since(begin)
-				begin = time.Now()
 				itemNext.Div(itemNext, big.NewInt(3))
-				timeForRelief += time.Since(begin)
-				begin = time.Now()
 				if m.testFunc(itemNext) {
 					targetMonkey := monkeys[m.trueTarget]
 					targetMonkey.items = append(targetMonkey.items, itemNext)
@@ -78,13 +68,11 @@ func (d day11) SolvePart1(input []string) interface{} {
 					targetMonkey.items = append(targetMonkey.items, itemNext)
 					monkeys[m.falseTarget] = targetMonkey
 				}
-				timeForThrowing += time.Since(begin)
 				inspectionsByMonkey[m.id] = inspectionsByMonkey[m.id] + 1
 			}
 			m.items = make([]*big.Int, 0)
 			monkeys[m.id] = m
 		}
-		timeOverall += time.Since(beginOverall)
 	}
 	inspections := make([]int, 0)
 	for _, value := range inspectionsByMonkey {
