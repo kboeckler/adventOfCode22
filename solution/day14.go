@@ -13,6 +13,21 @@ type day14 struct {
 }
 
 func (d day14) SolvePart1(input []string) interface{} {
+	height, blocked := d.parseCave(input)
+	return d.fillCave(blocked, height)
+}
+
+func (d day14) SolvePart2(input []string) interface{} {
+	height, blocked := d.parseCave(input)
+	floorFrom := &vertex{499 - height, height + 1}
+	floorTo := &vertex{501 + height, height + 1}
+	for _, vertex := range floorFrom.lineTo(floorTo) {
+		blocked[*vertex] = true
+	}
+	return d.fillCave(blocked, height+2)
+}
+
+func (d day14) parseCave(input []string) (int, map[vertex]bool) {
 	height := -1
 	blocked := make(map[vertex]bool)
 	for _, row := range input {
@@ -29,6 +44,17 @@ func (d day14) SolvePart1(input []string) interface{} {
 			startVertex = endVertex
 		}
 	}
+	return height, blocked
+}
+
+func (d day14) parseVertex(raw string) *vertex {
+	split := strings.Split(strings.TrimSpace(raw), ",")
+	x, _ := strconv.Atoi(split[0])
+	y, _ := strconv.Atoi(split[1])
+	return &vertex{x, y}
+}
+
+func (d day14) fillCave(blocked map[vertex]bool, height int) interface{} {
 	startVertex := &vertex{500, 0}
 	currentVertex := startVertex
 	counter := 0
@@ -46,21 +72,17 @@ func (d day14) SolvePart1(input []string) interface{} {
 			}
 		}
 		if hasStopped {
-			blocked[*currentVertex] = true
-			currentVertex = startVertex
 			counter++
+			blocked[*currentVertex] = true
+			if *currentVertex == *startVertex {
+				break
+			}
+			currentVertex = startVertex
 		} else {
 			break
 		}
 	}
 	return counter
-}
-
-func (d day14) parseVertex(raw string) *vertex {
-	split := strings.Split(strings.TrimSpace(raw), ",")
-	x, _ := strconv.Atoi(split[0])
-	y, _ := strconv.Atoi(split[1])
-	return &vertex{x, y}
 }
 
 type vertex struct {
@@ -114,16 +136,4 @@ func (v *vertex) lineTo(end *vertex) []*vertex {
 		vertices = append(vertices, &vertex{v.x, end.y})
 	}
 	return vertices
-}
-
-func (d day14) SolvePart2(input []string) interface{} {
-	return 0
-}
-
-func (d day14) coordToIndex(x, y, width int) int {
-	return y*width + x
-}
-
-func (d day14) indexToCoord(index, width int) (int, int) {
-	return index % width, index / width
 }
