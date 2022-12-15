@@ -7,6 +7,7 @@ import (
 	"os"
 	"reflect"
 	"strings"
+	"time"
 )
 
 func main() {
@@ -14,6 +15,7 @@ func main() {
 	day := *parser.Int("d", "day", &argparse.Options{Required: false, Help: "one specific day to solve"})
 	inputFolder := parser.String("i", "input", &argparse.Options{Required: false, Help: "input folder of puzzle input", Default: "input"})
 	shortPrint := parser.Flag("s", "short", &argparse.Options{Required: false, Help: "Prints the results in a short format"})
+	timeTracking := parser.Flag("t", "time", &argparse.Options{Required: false, Help: "Tracks and prints the time needed for each day"})
 	err := parser.Parse(os.Args)
 	if err != nil {
 		fmt.Print(parser.Usage(err))
@@ -30,9 +32,9 @@ func main() {
 	}
 	var printSrc printing
 	if *shortPrint {
-		printSrc = short{}
+		printSrc = short{*timeTracking}
 	} else {
-		printSrc = verbose{}
+		printSrc = verbose{*timeTracking}
 	}
 	allDays := make([]int, 0, 24)
 	if day > 0 {
@@ -54,6 +56,7 @@ func main() {
 	}
 
 	fmt.Printf(printSrc.welcomeMsg())
+	before := time.Now()
 	for _, day := range allDays {
 		fmt.Printf(printSrc.startSolving(day))
 		solutionForDay := solution.GetSolutionFor(day)
@@ -66,13 +69,20 @@ func main() {
 		}
 		inputAsRows := strings.Split(strings.ReplaceAll(string(input), "\r\n", "\n"), "\n")
 		fmt.Printf(printSrc.startPart1())
+		before1 := time.Now()
 		result1 := solutionForDay.SolvePart1(inputAsRows)
+		time1 := time.Since(before1)
 		fmt.Printf(printSrc.result1(result1))
 		fmt.Printf(printSrc.startPart2())
+		before2 := time.Now()
 		result2 := solutionForDay.SolvePart2(inputAsRows)
+		time2 := time.Since(before2)
 		fmt.Printf(printSrc.result2(result2))
+		fmt.Printf(printSrc.times(time1, time2))
 		fmt.Printf("\n")
 	}
+	timeAll := time.Since(before)
+	fmt.Printf(printSrc.timeAll(timeAll))
 }
 
 func findSimpleTypeName(solution solution.Solution) string {
@@ -87,9 +97,26 @@ type printing interface {
 	startPart2() string
 	result1(result interface{}) string
 	result2(result interface{}) string
+	times(time1 time.Duration, time2 time.Duration) string
+	timeAll(timeAll time.Duration) string
 }
 
 type verbose struct {
+	timeTracking bool
+}
+
+func (v verbose) timeAll(timeAll time.Duration) string {
+	if v.timeTracking {
+		return fmt.Sprintf("Total time needed: %v\n", timeAll)
+	}
+	return ""
+}
+
+func (v verbose) times(time1 time.Duration, time2 time.Duration) string {
+	if v.timeTracking {
+		return fmt.Sprintf(" (%v+%v=%v)", time1, time2, time1+time2)
+	}
+	return ""
 }
 
 func (v verbose) welcomeMsg() string {
@@ -117,6 +144,21 @@ func (v verbose) result2(result interface{}) string {
 }
 
 type short struct {
+	timeTracking bool
+}
+
+func (s short) timeAll(timeAll time.Duration) string {
+	if s.timeTracking {
+		return fmt.Sprintf("(%v)\n", timeAll)
+	}
+	return ""
+}
+
+func (s short) times(time1 time.Duration, time2 time.Duration) string {
+	if s.timeTracking {
+		return fmt.Sprintf(" (%v)", time1+time2)
+	}
+	return ""
 }
 
 func (s short) welcomeMsg() string {
