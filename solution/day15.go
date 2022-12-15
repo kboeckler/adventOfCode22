@@ -14,25 +14,15 @@ type day15 struct {
 }
 
 func (d day15) SolvePart1(input []string) interface{} {
-	return d.solve(input, 2_000_000)
+	return d.solve1(input, 2_000_000)
 }
 
-func (d day15) solve(input []string, row int) interface{} {
-	sensorPositions := make(map[cavePos]bool)
-	beaconPositions := make(map[cavePos]bool)
-	sensors := make([]sensor, 0)
-	positions := make([]cavePos, 0)
-	for _, row := range input {
-		numbers := d.parseNumbersFrom(row)
-		sensorPos := cavePos{numbers[0], numbers[1]}
-		beaconPos := cavePos{numbers[2], numbers[3]}
-		length := sensorPos.distTo(beaconPos.x, beaconPos.y)
-		sensorPositions[sensorPos] = true
-		sensors = append(sensors, sensor{sensorPos, beaconPos, length})
-		beaconPositions[beaconPos] = true
-		positions = append(positions, sensorPos)
-		positions = append(positions, beaconPos)
-	}
+func (d day15) SolvePart2(input []string) interface{} {
+	return d.solve2(input, 4_000_000, 4_000_000)
+}
+
+func (d day15) solve1(input []string, row int) interface{} {
+	sensorPositions, beaconPositions, sensors := d.parseInput(input)
 	minX, maxX := 9999999, -999999
 	for _, sens := range sensors {
 		if sens.pos.x < minX {
@@ -56,10 +46,13 @@ func (d day15) solve(input []string, row int) interface{} {
 	}
 	amount := 0
 	for x := minX - maxLength; x < maxX+maxLength; x++ {
+		pos := cavePos{x, row}
+		if sensorPositions[pos] || beaconPositions[pos] {
+			continue
+		}
 		isImpossible := false
 		for _, sens := range sensors {
-			pos := cavePos{x, row}
-			if sens.pos.distTo(pos.x, pos.y) <= sens.length && !sensorPositions[pos] && !beaconPositions[pos] {
+			if sens.pos.distTo(pos.x, pos.y) <= sens.length {
 				isImpossible = true
 				break
 			}
@@ -71,12 +64,82 @@ func (d day15) solve(input []string, row int) interface{} {
 	return amount
 }
 
-func (d day15) SolvePart2(input []string) interface{} {
-	return 0
+func (d day15) solve2(input []string, maxX, maxY int) interface{} {
+	sensorPositions, beaconPositions, sensors := d.parseInput(input)
+	candidates := make([]cavePos, 0)
+	for _, sens := range sensors {
+		outerX := sens.pos.x - sens.length - 1
+		outerY := sens.pos.y
+		if outerX >= 0 && outerX <= maxX && outerY >= 0 && outerY <= maxY {
+			candidates = append(candidates, cavePos{outerX, outerY})
+		}
+		for i := 0; i < sens.length+1; i++ {
+			outerX += 1
+			outerY -= 1
+			if outerX >= 0 && outerX <= maxX && outerY >= 0 && outerY <= maxY {
+				candidates = append(candidates, cavePos{outerX, outerY})
+			}
+		}
+		for i := 0; i < sens.length+1; i++ {
+			outerX += 1
+			outerY += 1
+			if outerX >= 0 && outerX <= maxX && outerY >= 0 && outerY <= maxY {
+				candidates = append(candidates, cavePos{outerX, outerY})
+			}
+		}
+		for i := 0; i < sens.length+1; i++ {
+			outerX -= 1
+			outerY += 1
+			if outerX >= 0 && outerX <= maxX && outerY >= 0 && outerY <= maxY {
+				candidates = append(candidates, cavePos{outerX, outerY})
+			}
+		}
+		for i := 0; i < sens.length; i++ {
+			outerX -= 1
+			outerY -= 1
+			if outerX >= 0 && outerX <= maxX && outerY >= 0 && outerY <= maxY {
+				candidates = append(candidates, cavePos{outerX, outerY})
+			}
+		}
+	}
+	var distressBeaconPos *cavePos
+	for _, candidate := range candidates {
+		if sensorPositions[candidate] || beaconPositions[candidate] {
+			continue
+		}
+		isImpossible := false
+		for _, sens := range sensors {
+			if sens.pos.distTo(candidate.x, candidate.y) <= sens.length {
+				isImpossible = true
+				break
+			}
+		}
+		if !isImpossible {
+			distressBeaconPos = &candidate
+			break
+		}
+	}
+	return distressBeaconPos.x*4_000_000 + distressBeaconPos.y
+}
+
+func (d day15) parseInput(input []string) (map[cavePos]bool, map[cavePos]bool, []sensor) {
+	sensorPositions := make(map[cavePos]bool)
+	beaconPositions := make(map[cavePos]bool)
+	sensors := make([]sensor, 0)
+	for _, row := range input {
+		numbers := d.parseNumbersFrom(row)
+		sensorPos := cavePos{numbers[0], numbers[1]}
+		beaconPos := cavePos{numbers[2], numbers[3]}
+		length := sensorPos.distTo(beaconPos.x, beaconPos.y)
+		sensorPositions[sensorPos] = true
+		sensors = append(sensors, sensor{sensorPos, beaconPos, length})
+		beaconPositions[beaconPos] = true
+	}
+	return sensorPositions, beaconPositions, sensors
 }
 
 func (d day15) parseNumbersFrom(row string) []int {
-	re, _ := regexp.Compile("\\d+")
+	re, _ := regexp.Compile("-?\\d+")
 	matches := re.FindAllStringSubmatch(row, -1)
 	numbers := make([]int, 0)
 	for _, single := range matches {
@@ -98,13 +161,4 @@ type sensor struct {
 	pos           cavePos
 	closestBeacon cavePos
 	length        int
-}
-
-func (p cavePos) neighbors() []cavePos {
-	neighbors := make([]cavePos, 4)
-	neighbors[0] = cavePos{p.x + 1, p.y}
-	neighbors[1] = cavePos{p.x - 1, p.y}
-	neighbors[2] = cavePos{p.x, p.y + 1}
-	neighbors[3] = cavePos{p.x, p.y - 1}
-	return neighbors
 }
