@@ -12,7 +12,7 @@ import (
 
 func main() {
 	parser := argparse.NewParser("adventOfCode22", "Prints solutions of Advent of Code 2022")
-	day := *parser.Int("d", "day", &argparse.Options{Required: false, Help: "one specific day to solve"})
+	day := parser.Int("d", "day", &argparse.Options{Required: false, Help: "one specific day to solve"})
 	inputFolder := parser.String("i", "input", &argparse.Options{Required: false, Help: "input folder of puzzle input", Default: "input"})
 	shortPrint := parser.Flag("s", "short", &argparse.Options{Required: false, Help: "Prints the results in a short format"})
 	timeTracking := parser.Flag("t", "time", &argparse.Options{Required: false, Help: "Tracks and prints the time needed for each day"})
@@ -37,16 +37,16 @@ func main() {
 		printSrc = verbose{*timeTracking}
 	}
 	allDays := make([]int, 0, 24)
-	if day > 0 {
-		if day <= 0 || day > 24 {
-			fmt.Printf("Day %d is not between 1 and 24\n", day)
+	if *day > 0 {
+		if *day <= 0 || *day > 24 {
+			fmt.Printf("Day %d is not between 1 and 24\n", *day)
 			os.Exit(-2)
 		}
-		if !solution.HasSolutionFor(day) {
-			fmt.Printf("Day %d has no programmed solution\n", day)
+		if !solution.HasSolutionFor(*day) {
+			fmt.Printf("Day %d has no programmed solution\n", *day)
 			os.Exit(-3)
 		}
-		allDays = append(allDays, day)
+		allDays = append(allDays, *day)
 	} else {
 		for day := 1; day <= 24; day++ {
 			if solution.HasSolutionFor(day) {
