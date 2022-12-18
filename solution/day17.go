@@ -5,10 +5,6 @@ import (
 	"time"
 )
 
-var (
-	timeContains time.Duration
-)
-
 func init() {
 	RegisterSolution(17, day17{})
 }
@@ -32,16 +28,10 @@ func (d day17) solveWithAmount(input []string, amountRocks int64) interface{} {
 	maxHeight := int64(-1)
 	blocks := make(map[tetrisPos]bool)
 	timeStep := time.Now()
-	var timeAdd time.Duration
 	for i := 0; int64(i) < amountRocks; i++ {
-		if i%100_000 == 0 {
+		if i%1_000_000 == 0 {
 			fmt.Printf("Block # %d\n", i)
-			fmt.Printf("TimeContains: %dms\n", timeContains.Milliseconds())
-			fmt.Printf("TimeAdd: %dms\n", timeAdd.Milliseconds())
 			fmt.Printf("TimeStep: %dms\n", time.Since(timeStep).Milliseconds())
-			timeStep = time.Now()
-			timeAdd = 0
-			timeContains = 0
 		}
 		form := forms[formIndex].new(maxHeight)
 		formIndex = (formIndex + 1) % len(forms)
@@ -52,9 +42,7 @@ func (d day17) solveWithAmount(input []string, amountRocks int64) interface{} {
 			couldDrop := form.drop(&blocks)
 			if !couldDrop {
 				for _, block := range form.getBlocks() {
-					timeBefore := time.Now()
 					blocks[*block] = true
-					timeAdd += time.Since(timeBefore)
 					if block.y > maxHeight {
 						maxHeight = block.y
 					}
@@ -67,21 +55,27 @@ func (d day17) solveWithAmount(input []string, amountRocks int64) interface{} {
 }
 
 type tetris struct {
-	pos    *tetrisPos
-	blocks []*tetrisPos
+	pos             *tetrisPos
+	blocks          []*tetrisPos
+	moveRightBlocks []int
+	moveLeftBlocks  []int
+	moveDownBlocks  []int
 }
 
 func (t *tetris) new(maxHeight int64) *tetris {
-	return &tetris{&tetrisPos{2, maxHeight + 4}, t.blocks}
+	return &tetris{&tetrisPos{2, maxHeight + 4}, t.blocks, t.moveRightBlocks, t.moveLeftBlocks, t.moveDownBlocks}
 }
 
 func (t *tetris) push(stream uint8, blocks *map[tetrisPos]bool) {
 	direction := int64(1)
+	moveBlocks := t.moveRightBlocks
 	if stream == '<' {
 		direction = -1
+		moveBlocks = t.moveLeftBlocks
 	}
 	canMove := true
-	for _, block := range t.blocks {
+	for _, blockIndex := range moveBlocks {
+		block := t.blocks[blockIndex]
 		pushedBlock := tetrisPos{t.pos.x + block.x + direction, t.pos.y + block.y}
 		if pushedBlock.x < 0 || pushedBlock.x >= 7 || contains(blocks, &pushedBlock) {
 			canMove = false
@@ -94,15 +88,14 @@ func (t *tetris) push(stream uint8, blocks *map[tetrisPos]bool) {
 }
 
 func contains(blocks *map[tetrisPos]bool, pushedBlock *tetrisPos) bool {
-	before := time.Now()
 	result := (*blocks)[*pushedBlock]
-	timeContains += time.Since(before)
 	return result
 }
 
 func (t *tetris) drop(blocks *map[tetrisPos]bool) bool {
 	canMove := true
-	for _, block := range t.blocks {
+	for _, blockIndex := range t.moveDownBlocks {
+		block := t.blocks[blockIndex]
 		pushedBlock := tetrisPos{t.pos.x + block.x, t.pos.y + block.y - 1}
 		if pushedBlock.y < 0 || contains(blocks, &pushedBlock) {
 			canMove = false
@@ -134,7 +127,7 @@ func (d day17) createMinus() *tetris {
 	blocks[1] = &tetrisPos{1, 0}
 	blocks[2] = &tetrisPos{2, 0}
 	blocks[3] = &tetrisPos{3, 0}
-	return &tetris{&tetrisPos{0, 0}, blocks}
+	return &tetris{&tetrisPos{0, 0}, blocks, []int{3}, []int{0}, []int{0, 1, 2, 3}}
 }
 
 func (d day17) createPlus() *tetris {
@@ -144,7 +137,7 @@ func (d day17) createPlus() *tetris {
 	blocks[2] = &tetrisPos{1, 1}
 	blocks[3] = &tetrisPos{2, 1}
 	blocks[4] = &tetrisPos{1, 2}
-	return &tetris{&tetrisPos{0, 0}, blocks}
+	return &tetris{&tetrisPos{0, 0}, blocks, []int{0, 3, 4}, []int{0, 1, 4}, []int{0, 1, 3}}
 }
 
 func (d day17) createL() *tetris {
@@ -154,7 +147,7 @@ func (d day17) createL() *tetris {
 	blocks[2] = &tetrisPos{2, 0}
 	blocks[3] = &tetrisPos{2, 1}
 	blocks[4] = &tetrisPos{2, 2}
-	return &tetris{&tetrisPos{0, 0}, blocks}
+	return &tetris{&tetrisPos{0, 0}, blocks, []int{2, 3, 4}, []int{0, 3, 4}, []int{0, 1, 2}}
 }
 
 func (d day17) createBar() *tetris {
@@ -163,7 +156,7 @@ func (d day17) createBar() *tetris {
 	blocks[1] = &tetrisPos{0, 1}
 	blocks[2] = &tetrisPos{0, 2}
 	blocks[3] = &tetrisPos{0, 3}
-	return &tetris{&tetrisPos{0, 0}, blocks}
+	return &tetris{&tetrisPos{0, 0}, blocks, []int{0, 1, 2, 3}, []int{0, 1, 2, 3}, []int{0}}
 }
 
 func (d day17) createQuad() *tetris {
@@ -172,5 +165,5 @@ func (d day17) createQuad() *tetris {
 	blocks[1] = &tetrisPos{1, 0}
 	blocks[2] = &tetrisPos{0, 1}
 	blocks[3] = &tetrisPos{1, 1}
-	return &tetris{&tetrisPos{0, 0}, blocks}
+	return &tetris{&tetrisPos{0, 0}, blocks, []int{1, 3}, []int{0, 2}, []int{0, 1}}
 }
