@@ -31,8 +31,9 @@ func (d day17) solveWithAmount(input []string, amountRocks int64) interface{} {
 	timeStep := time.Now()
 	for i := 0; int64(i) < amountRocks; i++ {
 		if i%1_000_000 == 0 {
-			fmt.Printf("Block # %d\n", i)
-			fmt.Printf("TimeStep: %dms\n", time.Since(timeStep).Milliseconds())
+			fmt.Print("\033[2K\r")
+			fmt.Printf("Block # %d", i)
+			fmt.Printf(" | Time: %dms", time.Since(timeStep).Milliseconds())
 		}
 		form := forms[formIndex].new(maxHeight)
 		formIndex = (formIndex + 1) % len(forms)
@@ -59,6 +60,7 @@ func (d day17) solveWithAmount(input []string, amountRocks int64) interface{} {
 			blocks2 = make(map[tetrisPos]bool)
 		}
 	}
+	fmt.Println()
 	return maxHeight + 1
 }
 

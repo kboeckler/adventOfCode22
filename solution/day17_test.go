@@ -1,6 +1,8 @@
 package solution
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestExample17_1(t *testing.T) {
 	input := []string{">>><<><>><<<>><>>><<<>>><<<><<<>><>><<>>"}
