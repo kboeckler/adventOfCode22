@@ -27,6 +27,7 @@ func (d day17) solveWithAmount(input []string, amountRocks int64) interface{} {
 	formIndex := 0
 	maxHeight := int64(-1)
 	blocks := make(map[tetrisPos]bool)
+	blocks2 := make(map[tetrisPos]bool)
 	timeStep := time.Now()
 	for i := 0; int64(i) < amountRocks; i++ {
 		if i%1_000_000 == 0 {
@@ -42,6 +43,9 @@ func (d day17) solveWithAmount(input []string, amountRocks int64) interface{} {
 			couldDrop := form.drop(&blocks)
 			if !couldDrop {
 				for _, block := range form.getBlocks() {
+					if i > 100_000 {
+						blocks2[*block] = true
+					}
 					blocks[*block] = true
 					if block.y > maxHeight {
 						maxHeight = block.y
@@ -49,6 +53,10 @@ func (d day17) solveWithAmount(input []string, amountRocks int64) interface{} {
 				}
 				break
 			}
+		}
+		if i > 200_000 && i%100_000 == 0 {
+			blocks = blocks2
+			blocks2 = make(map[tetrisPos]bool)
 		}
 	}
 	return maxHeight + 1
