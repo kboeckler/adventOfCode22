@@ -2,7 +2,6 @@ package solution
 
 import (
 	"fmt"
-	"time"
 )
 
 func init() {
@@ -26,15 +25,11 @@ func (d day17) solveWithAmount(input []string, amountRocks int64) interface{} {
 	streamIndex := 0
 	formIndex := 0
 	maxHeight := int64(-1)
+	profile := d.createProfile()
+	profiles := make(map[string]caveProfileEntry)
+	extrapolatedHeight := int64(0)
 	blocks := make(map[tetrisPos]bool)
-	blocks2 := make(map[tetrisPos]bool)
-	timeStep := time.Now()
-	for i := 0; int64(i) < amountRocks; i++ {
-		if i%1_000_000 == 0 {
-			fmt.Print("\033[2K\r")
-			fmt.Printf("Block # %d", i)
-			fmt.Printf(" | Time: %dms", time.Since(timeStep).Milliseconds())
-		}
+	for i := int64(0); i < amountRocks; i++ {
 		form := forms[formIndex].new(maxHeight)
 		formIndex = (formIndex + 1) % len(forms)
 		for {
@@ -43,25 +38,35 @@ func (d day17) solveWithAmount(input []string, amountRocks int64) interface{} {
 			form.push(stream, &blocks)
 			couldDrop := form.drop(&blocks)
 			if !couldDrop {
+				newMaxHeight := maxHeight
 				for _, block := range form.getBlocks() {
-					if i > 100_000 {
-						blocks2[*block] = true
-					}
 					blocks[*block] = true
-					if block.y > maxHeight {
-						maxHeight = block.y
+					profile.addBlock(block.x, block.y, maxHeight)
+					if block.y > newMaxHeight {
+						newMaxHeight = block.y
 					}
+				}
+				if newMaxHeight > maxHeight {
+					profile.registerHeightIncrease(newMaxHeight - maxHeight)
+					maxHeight = newMaxHeight
 				}
 				break
 			}
 		}
-		if i > 200_000 && i%100_000 == 0 {
-			blocks = blocks2
-			blocks2 = make(map[tetrisPos]bool)
+		if extrapolatedHeight == 0 {
+			profileAsString := fmt.Sprintf("%d %d %s", (len(forms)+formIndex-1)%len(forms), (len(streams)+streamIndex-1)%len(streams), profile.String())
+			entry, hasProfile := profiles[profileAsString]
+			if hasProfile {
+				repeatingRoundOffset := i - entry.round
+				repeatingHeightOffset := maxHeight - entry.maxHeight
+				extrapolatedRepeats := (amountRocks - i) / repeatingRoundOffset
+				extrapolatedHeight = extrapolatedRepeats * repeatingHeightOffset
+				i = i + extrapolatedRepeats*repeatingRoundOffset
+			}
+			profiles[profileAsString] = caveProfileEntry{i, maxHeight}
 		}
 	}
-	fmt.Println()
-	return maxHeight + 1
+	return extrapolatedHeight + maxHeight + 1
 }
 
 type tetris struct {
@@ -87,7 +92,7 @@ func (t *tetris) push(stream uint8, blocks *map[tetrisPos]bool) {
 	for _, blockIndex := range moveBlocks {
 		block := t.blocks[blockIndex]
 		pushedBlock := tetrisPos{t.pos.x + block.x + direction, t.pos.y + block.y}
-		if pushedBlock.x < 0 || pushedBlock.x >= 7 || contains(blocks, &pushedBlock) {
+		if pushedBlock.x < 0 || pushedBlock.x >= 7 || (*blocks)[pushedBlock] {
 			canMove = false
 			break
 		}
@@ -97,17 +102,12 @@ func (t *tetris) push(stream uint8, blocks *map[tetrisPos]bool) {
 	}
 }
 
-func contains(blocks *map[tetrisPos]bool, pushedBlock *tetrisPos) bool {
-	result := (*blocks)[*pushedBlock]
-	return result
-}
-
 func (t *tetris) drop(blocks *map[tetrisPos]bool) bool {
 	canMove := true
 	for _, blockIndex := range t.moveDownBlocks {
 		block := t.blocks[blockIndex]
 		pushedBlock := tetrisPos{t.pos.x + block.x, t.pos.y + block.y - 1}
-		if pushedBlock.y < 0 || contains(blocks, &pushedBlock) {
+		if pushedBlock.y < 0 || (*blocks)[pushedBlock] {
 			canMove = false
 			break
 		}
@@ -176,4 +176,40 @@ func (d day17) createQuad() *tetris {
 	blocks[2] = &tetrisPos{0, 1}
 	blocks[3] = &tetrisPos{1, 1}
 	return &tetris{&tetrisPos{0, 0}, blocks, []int{1, 3}, []int{0, 2}, []int{0, 1}}
+}
+
+type caveProfile struct {
+	lastBlocksPerColumn [][]int64
+}
+
+func (d day17) createProfile() *caveProfile {
+	lastBlocks := make([][]int64, 7)
+	for i := 0; i < 7; i++ {
+		lastBlocks[i] = make([]int64, 0)
+	}
+	return &caveProfile{lastBlocks}
+}
+
+func (c *caveProfile) addBlock(x, y, maxHeight int64) {
+	c.lastBlocksPerColumn[x] = append(c.lastBlocksPerColumn[x], maxHeight-y)
+	if len(c.lastBlocksPerColumn[x]) > 5 {
+		c.lastBlocksPerColumn[x] = c.lastBlocksPerColumn[x][len(c.lastBlocksPerColumn[x])-5 : len(c.lastBlocksPerColumn[x])-1]
+	}
+}
+
+func (c *caveProfile) registerHeightIncrease(increase int64) {
+	for x := range c.lastBlocksPerColumn {
+		for y := range c.lastBlocksPerColumn[x] {
+			c.lastBlocksPerColumn[x][y] = c.lastBlocksPerColumn[x][y] + increase
+		}
+	}
+}
+
+func (c *caveProfile) String() string {
+	return fmt.Sprintf("%v", c.lastBlocksPerColumn)
+}
+
+type caveProfileEntry struct {
+	round     int64
+	maxHeight int64
 }
